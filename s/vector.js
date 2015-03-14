@@ -99,7 +99,7 @@ var Vector;
 					w = v;
 				return this.x*w - this.y*v;
 			},
-			angleTo: function(v, w) {
+			angleBetween: function(v, w) {
 				if (typeof v !== 'number') {
 					w = v.y; v = v.x;
 				} else if (typeof w !== 'number')
