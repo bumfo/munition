@@ -106,6 +106,12 @@ var Vector;
 					w = v;
 				return Math.acos(this.dot(v, w) / (this.length*Math.sqrt(v*v+w*w)));
 			},
+			angleTo: function(v) {
+				return this.angleBetween(v) * (this.cross(v)>=0?1:-1);
+			},
+			angleFrom: function(v) {
+				return -this.angleTo(v);
+			},
 			axisX: function(v, w) { // regards v as x-axis
 				if (typeof v !== 'number') {
 					w = v.y; v = v.x;
