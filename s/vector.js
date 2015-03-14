@@ -203,7 +203,7 @@ var Vector;
 				a.x = -b.x; a.y = -b.y;
 				return a;
 			},
-			unit: function(a, b) {
+			normalize: function(a, b) {
 				if (b === void 0) { b = a; }
 				var length = b.length; a.x = b.x/length; a.y = b.y/length;
 				return a;
@@ -227,9 +227,6 @@ var Vector;
 				if (c === void 0) { c = b; b = a; } if (typeof b === 'number') b = new Vector(b, b); if (typeof c === 'number') c = new Vector(c, c);
 				a.x = b.x/c.x; a.y = b.y/c.y;
 				return a;
-			},
-			normalize: function() {
-				return vector.unit.apply(this, arguments);
 			}
 		});
 
