@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<title>robot</title>
+
+<meta name="viewport" content="user-scalable=no, initial-scale=1">
+
+<style>
+	html {
+		overflow: hidden;
+		background: #ddd;
+	}
+	html, body {
+		margin: 0;
+		padding: 0;
+	}
+</style>
+
+<canvas></canvas>
+
+<script src="s/module2.js"></script>
+<script src="s/vector2.js"></script>
+<script src="s/physis.js"></script>
+<!-- <script src="s/draw.js"></script> -->
+<!-- <script src="s/group.js"></script> -->
+<!-- <script src="s/robot.js"></script> -->
+<script>
+	var body = new Body({pos:[100,100],velocity:[10,10],drag:0.001});
+
+	var c = document.querySelector('canvas');
+	var ctx = c.getContext('2d');
+
+	var width = window.innerWidth, height = window.innerHeight;
+	var ratio = (window.devicePixelRatio||1)/(ctx.webkitBackingStorePixelRatio||ctx.backingStorePixelRatio||1);
+
+	c.width = width*ratio; c.height = height*ratio;
+	c.style.width = width + "px"; c.style.height = height + "px";
+	ctx.scale(ratio, ratio);
+
+	ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+	ctx.fillStyle = 'rgba(255,255,255,0.25)';
+
+	requestAnimationFrame(function() {
+		requestAnimationFrame(function frame() {
+			var lw = 1;
+			ctx.clearRect(body.pos.x-20-lw, body.pos.y-20-lw, (20+lw)*2, (20+lw)*2);
+
+			body.update();
+
+			ctx.lineWidth = lw;
+			ctx.beginPath();
+			ctx.arc(body.pos.x, body.pos.y, 20, 0, Math.PI*2, false);
+			ctx.stroke();
+			ctx.fill();
+
+			requestAnimationFrame(frame);
+		});
+	});
+</script>
