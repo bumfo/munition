@@ -1,26 +1,11 @@
 <!DOCTYPE html>
 <title>munition</title>
 
-
 <meta name="viewport" content="user-scalable=no, initial-scale=1">
 
-
 <style>
-	html {
-		overflow: hidden;
-		background: #ddd;
-	}
-	html, body {
-		margin: 0;
-		padding: 0;
-	}
-/*	canvas {
-		image-rendering: optimizeSpeed;
-		image-rendering: -moz-crisp-edges;
-		image-rendering: -webkit-optimize-contrast;
-		image-rendering: -o-crisp-edges;
-		image-rendering: pixelated;
-	}*/
+  html { overflow: hidden; background: #ddd; }
+  html, body { margin: 0; padding: 0; }
 </style>
 
 <canvas></canvas>
@@ -28,183 +13,139 @@
 <script src="s/module.js"></script>
 <script src="s/vector.js"></script>
 <script src="s/body.js"></script>
+<script src="s/draw.js"></script>
 <script>
 'use strict';
 
-var canvas = document.querySelector('canvas'), ctx = canvas.getContext('2d');
+(function() {
+	var mousePos = Vector(0,0);
 
-var width = window.innerWidth, height = window.innerHeight;
-var ratio = (window.devicePixelRatio||1)/(ctx.webkitBackingStorePixelRatio||ctx.backingStorePixelRatio||1);
+	var tank = new Tank({velocity: Vector(-5,-5), gun: {cooldown: 0.8, headingFix: 2}, toPos: mousePos}),
+		robot = new Tank({velocity: Vector(5,5), gun: {cooldown: 0.8, headingFix: 2}});
 
-canvas.width = width*ratio; canvas.height = height*ratio;
-canvas.style.width = width + "px"; canvas.style.height = height + "px";
-ctx.scale(ratio, ratio);
+	tank.target = robot;
+	robot.target = tank;
 
-// ctx.globalAlpha = 0.5;
-// ctx.globalCompositeOperation = 'lighten';
-ctx.lineWidth = 5;//0.5;
-ctx.strokeStyle = 'rgba(0,0,0,0.8)';
-ctx.fillStyle = 'rgba(255,255,255,0.25)';
+	var tanks = [robot, tank], bullets = [], explosions = [],
+		objs = [tanks, bullets, explosions];
 
-var mousePos = Vector(0,0);
+	bullets.subdivision = 5;
+	explosions.noCollision = true;
 
-var tank = new Tank({velocity: Vector(-5,-5)});
-var robot = new Tank({velocity: Vector(5,5)});
+	console.log(tank);
 
-window.addEventListener("mousemove", function(e) {
-	mousePos.x = e.pageX;
-	mousePos.y = e.pageY;
-});
+	window.addEventListener("mousemove", function(e) {
+		mousePos.x = e.pageX;
+		mousePos.y = e.pageY;
+	});
 
-window.addEventListener("touchstart", function(e) {
-	e.preventDefault();
+	window.addEventListener("touchstart", function(e) {
+		e.preventDefault();
 
-	mousePos.x = e.pageX;
-	mousePos.y = e.pageY;
-});
+		mousePos.x = e.pageX;
+		mousePos.y = e.pageY;
+	});
 
-window.addEventListener("touchmove", function(e) {
-	e.preventDefault();
+	window.addEventListener("touchmove", function(e) {
+		e.preventDefault();
 
-	mousePos.x = e.pageX;
-	mousePos.y = e.pageY;
-});
+		mousePos.x = e.pageX;
+		mousePos.y = e.pageY;
+	});
 
-window.addEventListener("mousemove", function(e) {
-	mousePos.x = e.pageX;
-	mousePos.y = e.pageY;
-});
+	window.addEventListener("mousemove", function(e) {
+		mousePos.x = e.pageX;
+		mousePos.y = e.pageY;
+	});
 
-var tanks = [robot, tank], bullets = [], explosions = [];
-var objs = [tanks, bullets, explosions];
+	var width = window.innerWidth, height = window.innerHeight;
 
-extend(Body.prototype, {
-	inFieldX: function(x, size) {
-		return size <= x && x <= width-size;
-	},
-	inFieldY: function(y, size) {
-		return size <= y && y <= height-size;
-	},
-	limitField: function(pos, size) {
-		if (pos.x < size)
-			pos.x = size;
-		else if (pos.x > width-size)
-			pos.x = width-size;
-		if (pos.y < size)
-			pos.y = size;
-		else if (pos.y > height-size)
-			pos.y = height-size;
-	}
-});
-
-Gun.prototype.shell = function(shell) {
-	bullets.push(shell);
-};
-
-Projectile.prototype.shell = function(shell) {
-	explosions.push(shell);
-};
-
-Projectile.prototype.remove = function() {
-	var index = bullets.indexOf(this);
-
-	if (index !== -1) {
-		bullets.splice(index, 1);
-	}
-};
-
-Explosion.prototype.remove = function() {
-	var index = explosions.indexOf(this);
-
-	if (index !== -1) {
-		explosions.splice(index, 1);
-	}
-};
-
-tank.target = robot;
-
-robot.gun.cooldown = 0.8;//0.9;
-robot.gun.headingFix = 2;//40;
-// robot.gun.heatfactor *= 0.001;
-tank.gun.cooldown = 0.8;//0.8;//0.9;
-tank.gun.headingFix = 2;//40;//1.5;
-// tank.gun.heatfactor *= 0.001;
-// robot.gun.flutter = 30;
-robot.target = tank; // {pos:Vector(0,0)};//
-robot.target.toPos = mousePos;
-
-console.log(tank);
-
-
-bullets.subdivision = 5;
-explosions.noCollision = true;
-
-requestAnimationFrame(function(t) {
-	var t0 = t, tt = t;
-
-	var fCount = 0;
-
-	console.log(t0);
-
-	requestAnimationFrame(function frame(t1) {
-		++fCount;
-
-		
-
-		var t = t1 - t0, dt = t1 - tt;
-		tt = t1;
-
-		// if (fCount%10 !== 0) {
-		// 	requestAnimationFrame(frame);
-		// 	return;
-		// }
-
-		var dtp = dt/1000*60, tp = t/1000*60;
-
-		var scale = 1;
-			// scale = 0.1;
-
-		dtp *= scale;
-		tp *= scale;
-
-		objs.forEach(function(y) {
-			y.forEach(function(x) {
-				x.clear(ctx);
-			});
-		});
-		function detectCollision(o) {
-			if (o.noCollision)
-				return;
-			for (var i = 0, n = o.length; i < n; ++i) {
-				var x = o[i];
-				for (var j = i+1, m = o.length; j < m; ++j) {
-					x.detectImpact(o[j]);
-				}
-			}
+	extend(Body.prototype, {
+		inFieldX: function(x, radius) {
+			return radius <= x && x <= width-radius;
+		},
+		inFieldY: function(y, radius) {
+			return radius <= y && y <= height-radius;
+		},
+		limitField: function(pos, radius) {
+			if (pos.x < radius)
+				pos.x = radius;
+			else if (pos.x > width-radius)
+				pos.x = width-radius;
+			if (pos.y < radius)
+				pos.y = radius;
+			else if (pos.y > height-radius)
+				pos.y = height-radius;
 		}
-		// robot.detectImpact(tank);
+	});
 
-		objs.forEach(function(y) {
-			// y.forEach(function(x) {
-			// 	x.update(dtp, tp);
-			// });
+	Gun.prototype.shell = function(shell) {
+		bullets.push(shell);
+	};
 
-			var dtpn = dtp, n = y.subdivision;
+	Projectile.prototype.shell = function(shell) {
+		explosions.push(shell);
+	};
 
-			if (y.subdivision > 1) {
-				dtpn = 1/n;
+	Projectile.prototype.remove = function() {
+		var index = bullets.indexOf(this);
 
-				for (var j = 0; j < n; ++j) {
-					var i = 0, yi;
-					detectCollision(y);
+		if (index !== -1) {
+			bullets.splice(index, 1);
+		}
+	};
 
-					while (yi = y[i]) {
-						yi.update(dtpn, NaN);
-						if (yi === y[i])
-							i++;
+	Explosion.prototype.remove = function() {
+		var index = explosions.indexOf(this);
+
+		if (index !== -1) {
+			explosions.splice(index, 1);
+		}
+	};
+
+	var draw = new Draw(width, height);
+
+	requestAnimationFrame(function(t) {
+		var t0 = t, tt = t;
+
+		var fCount = 0;
+
+		console.log(t0);
+
+		requestAnimationFrame(function frame(t1) {
+			++fCount;
+
+			var t = t1 - t0, dt = t1 - tt;
+			tt = t1;
+
+			// if (fCount%10 !== 0) {
+			// 	requestAnimationFrame(frame);
+			// 	return;
+			// }
+
+			var dtp = dt/1000*60, tp = t/1000*60;
+
+			var scale = 1;
+
+			dtp *= scale;
+			tp *= scale;
+
+			objs.forEach(function(y) {
+				y.forEach(function(x) {
+					x.clear(draw.ctx);
+				});
+			});
+			function detectCollision(o) {
+				if (o.noCollision)
+					return;
+				for (var i = 0, n = o.length; i < n; ++i) {
+					var x = o[i];
+					for (var j = i+1, m = o.length; j < m; ++j) {
+						x.detectImpact(o[j]);
 					}
 				}
-			} else {
+			}
+			function update(y, dtp, tp) {
 				var i = 0, yi;
 				detectCollision(y);
 
@@ -213,29 +154,42 @@ requestAnimationFrame(function(t) {
 					if (yi === y[i])
 						i++;
 				}
+
+				// y.forEach(function(x) {
+				// 	x.update(dtp, tp);
+				// });
 			}
-		});
 
-		objs.forEach(function(y) {
-			y.forEach(function(x) {
-				x.draw(ctx);
+			objs.forEach(function(y) {
+				var dtpn = dtp, n = y.subdivision;
+
+				if (n > 1) {
+					dtpn = 1/n;
+
+					for (var j = 0; j < n; ++j) {
+						update(y, dtpn, NaN);
+					}
+				} else {
+					update(y, dtp, tp);
+				}
 			});
+
+			objs.forEach(function(y) {
+				y.forEach(function(x) {
+					x.draw(draw.ctx);
+				});
+			});
+
+			var va1 = (1+Math.sin(tp/480*Math.PI*2))/2;
+			var va2 = (1+Math.sin(tp/480*Math.PI*2+678346))/2;
+
+			var k = 0.9;
+
+			robot.gun.cooldown = (0.9-k)+k*va1;
+			tank.gun.cooldown = (0.9-k)+k*va2;
+
+			requestAnimationFrame(frame);
 		});
-
-		var va1 = (1+Math.sin(tp/480*Math.PI*2))/2;
-		var va2 = (1+Math.sin(tp/480*Math.PI*2+678346))/2;
-
-		var k = 0.9;
-
-		robot.gun.cooldown = (0.9-k)+k*va1;
-		tank.gun.cooldown = (0.9-k)+k*va2;
-
-		// robot.gun.cooldown = va1*0.9*k+1-k;
-		// tank.gun.cooldown = va2*0.9*k+1-k;
-		// robot.gun.flutter = 5 * ((1+Math.sin(tp/480*Math.PI*2*Math.PI))/2*0.9+0.1);
-
-		requestAnimationFrame(frame);
 	});
-});
-
+}.call(this));
 </script>

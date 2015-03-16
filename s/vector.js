@@ -1,8 +1,8 @@
 'use strict';
 
-var Vector;
-
 (function() {
+	var Vector;
+
 	function square(x) {
 		return x*x;
 	}
@@ -169,8 +169,8 @@ var Vector;
 		}
 
 		extend(vector, {
-			of: function(o) {
-				return o.length === 2 ? new Vector(o[0], o[1]) : new Vector(o.x, o.y);
+			from: function(o) {
+				return !o ? new Vector(0, 0) : o.length === 2 ? new Vector(o[0], o[1]) : new Vector(o.x, o.y);
 			},
 			fromTheta: function(theta) {
 				return new Vector(Math.cos(theta), Math.sin(theta));
@@ -241,5 +241,5 @@ var Vector;
 		return vector;
 	}();
 
-	exports.Vector = Vector;
-})();
+	this.Vector = Vector;
+}.call(this));

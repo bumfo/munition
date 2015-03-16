@@ -1,8 +1,8 @@
 'use strict';
 
-var Group;
-
 (function() {
+	var Group;
+
 	Group = function() {
 		var Group = function() {};
 
@@ -12,4 +12,6 @@ var Group;
 
 		return Group = inherit(Group, Array, true);
 	}();
-}());
+
+	this.Group = Group;
+}.call(this));
