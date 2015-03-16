@@ -196,7 +196,9 @@ var Vector;
 				return Math.sqrt(a.x*a.x+a.y*a.y);
 			},
 			angleBetween: function(a, b) {
-				return Math.abs(-Math.PI + (Math.PI + Math.abs(Math.atan2(a.y, a.x) - Math.atan2(b.y, b.x))) % (Math.PI * 2));
+				// return Math.abs(-Math.PI + (Math.PI + Math.abs(Math.atan2(a.y, a.x) - Math.atan2(b.y, b.x))) % (Math.PI * 2));
+				var x = a.x, y = a.y, v = b.x, w = b.y;
+				return Math.acos((x * v + y * w) / (Math.sqrt(x * x + y * y) * Math.sqrt(v * v + w * w)));
 			},
 			distance: function(a, b) {
 				return Math.sqrt(square(b.x-a.x)+square(b.y-a.y));

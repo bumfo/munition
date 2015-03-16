@@ -31,8 +31,6 @@
 <script>
 'use strict';
 
-
-
 var canvas = document.querySelector('canvas'), ctx = canvas.getContext('2d');
 
 var width = window.innerWidth, height = window.innerHeight;
@@ -51,7 +49,7 @@ ctx.fillStyle = 'rgba(255,255,255,0.25)';
 var mousePos = Vector(0,0);
 
 var tank = new Tank({velocity: Vector(-5,-5)});
-var robot = new Tank({velocity:Vector(5,5)});
+var robot = new Tank({velocity: Vector(5,5)});
 
 window.addEventListener("mousemove", function(e) {
 	mousePos.x = e.pageX;
@@ -185,6 +183,7 @@ requestAnimationFrame(function(t) {
 			}
 		}
 		// robot.detectImpact(tank);
+
 		objs.forEach(function(y) {
 			// y.forEach(function(x) {
 			// 	x.update(dtp, tp);
@@ -238,6 +237,5 @@ requestAnimationFrame(function(t) {
 		requestAnimationFrame(frame);
 	});
 });
-
 
 </script>
