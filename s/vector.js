@@ -41,6 +41,12 @@
 			over: function(n) {
 				return new Vector(this.x/n, this.y/n);
 			},
+			zero: function() {
+				this.x = 0;
+				this.y = 0;
+
+				return this;
+			},
 			add: function(v) {
 				this.x += v.x;
 				this.y += v.y;
@@ -65,8 +71,23 @@
 
 				return this;
 			},
+			normalize: function() {
+				var length = this.length;
+				if (length > 0)
+					return this.divide(this.length);
+				else {
+					this.x = 1;
+					this.y = 0;
+
+					return this;
+				}
+			},
 			unit: function() {
-				return this.over(this.length);
+				var length = this.length;
+				if (length > 0)
+					return this.over(length);
+				else
+					return new Vector(1, 0);
 			},
 
 			equals: function(v, w) {
