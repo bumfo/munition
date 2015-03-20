@@ -38,39 +38,51 @@
 		}),
 		robot = new Tank({
 			pos: randomPos(), 
-			velocity: Vector(5,5), 
+			velocity: Vector(0,0), 
 			gun: {cooldown: 0.8, headingFix: 2},
-			// toPos: tank.pos
+			toPos: Vector(0, 100),//tank.pos
 		});
 
 	tank.target = robot;
 	robot.target = tank;
 
-	robot.update = function(dt, t) {
-		// this.pos.x = centerPos.x;
-		this.pos.y = centerPos.y;
-		// this.velocity.x = 0;
-		this.velocity.y = 0;
-		Tank.prototype.update.call(this, dt, t);
-		// this.velocity.x = 0;
-		this.velocity.y = 0;
-		// this.pos.x = centerPos.x;
-		this.pos.y = centerPos.y
-	}
+	// robot.autoSpin = true;
+	tank.friction = robot.friction = 1600;
+
+	// robot.update = function(dt, t) {
+	// 	// this.pos.x = centerPos.x;
+	// 	this.pos.y = centerPos.y;
+	// 	// this.velocity.x = 0;
+	// 	this.velocity.y = 0;
+	// 	Tank.prototype.update.call(this, dt, t);
+	// 	// this.velocity.x = 0;
+	// 	this.velocity.y = 0;
+	// 	// this.pos.x = centerPos.x;
+	// 	this.pos.y = centerPos.y
+	// }
 
 	var tanks = [tank, robot], bullets = [], explosions = [],
 		objs = [tanks, bullets, explosions];
 
-	for (var i = tanks.length, n = i+10; i < n; ++i) {
-		var tan = tanks[i] = new Tank({pos: [10+i*50, centerPos.y]});//, toPos: tanks[i-1].pos});
-		tan.target = tanks[i-1];
-		tan.update = function(dt, t) {
-			this.pos.y = centerPos.y;
-			this.velocity.y = 0;
-			Tank.prototype.update.call(this, dt, t);
-			this.velocity.y = 0;
-			this.pos.y = centerPos.y;
-		}
+	var d = 39, m = tanks.length;
+
+	for (var i = m, n = i+Math.round(width/39); i < n; ++i) {
+		var x = d/2+(i-m)*d;
+		var tan = tanks[i] = new Tank({pos: [x, centerPos.y]});//, toPos: tanks[i-1].pos});
+		tan.target = tank;;// {pos: Vector(x, 1000)};//tank;//tanks[i-1];
+
+		tan.gun.cooldown = 0.98;
+
+		tan.gun.heat += i*0.05;
+
+		tan.autoFire = true;
+		// tan.update = function(dt, t) {
+		// 	this.pos.y = centerPos.y;
+		// 	this.velocity.y = 0;
+		// 	Tank.prototype.update.call(this, dt, t);
+		// 	this.velocity.y = 0;
+		// 	this.pos.y = centerPos.y;
+		// }
 	}
 
 	// bullets.subdivision = 5;
@@ -78,49 +90,52 @@
 
 	console.log(tank);
 
-	window.addEventListener("mousemove", function(e) {
-		mousePos.x = e.pageX;
-		mousePos.y = e.pageY;
-	});
-
-	window.addEventListener("touchstart", function(e) {
-		e.preventDefault();
-
-		mousePos.x = e.pageX;
-		mousePos.y = e.pageY;
-	});
-
-	window.addEventListener("touchmove", function(e) {
-		e.preventDefault();
-
-		mousePos.x = e.pageX;
-		mousePos.y = e.pageY;
-	});
-
-	window.addEventListener("mousemove", function(e) {
-		mousePos.x = e.pageX;
-		mousePos.y = e.pageY;
-	});
-
 	var willFire = false, fired = false, willHoldFire = false;
 
-	window.addEventListener("mousedown", function(e) {
-		willFire = true;
-		fired = false;
-	});
+	(function() {
+		window.addEventListener("mousemove", function(e) {
+			mousePos.x = e.pageX;
+			mousePos.y = e.pageY;
+		});
 
-	window.addEventListener("mouseup", function(e) {
-		if (fired)
-			willFire = false;
-		else
-			willHoldFire = true
-	});
+		window.addEventListener("touchstart", function(e) {
+			e.preventDefault();
 
-	document.addEventListener("contextmenu", function(e) {
-		e.preventDefault();
-	});
+			mousePos.x = e.pageX;
+			mousePos.y = e.pageY;
+		});
 
-	
+		window.addEventListener("touchmove", function(e) {
+			e.preventDefault();
+
+			mousePos.x = e.pageX;
+			mousePos.y = e.pageY;
+		});
+
+		window.addEventListener("mousemove", function(e) {
+			mousePos.x = e.pageX;
+			mousePos.y = e.pageY;
+		});
+
+		
+
+		window.addEventListener("mousedown", function(e) {
+			willFire = true;
+			fired = false;
+		});
+
+		window.addEventListener("mouseup", function(e) {
+			if (fired)
+				willFire = false;
+			else
+				willHoldFire = true
+		});
+
+		document.addEventListener("contextmenu", function(e) {
+			e.preventDefault();
+		});
+
+	}())
 
 	extend(Body.prototype, {
 		inFieldX: function(x, radius) {
@@ -182,14 +197,18 @@
 			var t = t1 - t0, dt = t1 - tt;
 			tt = t1;
 
-			// if (fCount%10 !== 0) {
+			// if (fCount%2 !== 0) {
 			// 	requestAnimationFrame(frame);
 			// 	return;
+			// } else {
+			// 	// dt/=2;
 			// }
 
 			draw.clearFps();
 
 			var dtp = dt/1000*60, tp = t/1000*60;
+
+			dtp = 1;
 
 			var scale = 1;
 				// scale = 0.2;
@@ -260,6 +279,8 @@
 			objs.forEach(function(y, i) {
 				var dtpn = dtp, n = y.subdivision;
 
+				detectCollision0(objs, i);
+
 				if (n > 1) {
 					dtpn = 1/n;
 
@@ -270,7 +291,7 @@
 					update(y, dtp, tp);
 				}
 
-				detectCollision0(objs, i);
+				
 			});
 
 			objs.forEach(function(y) {
