@@ -3,6 +3,8 @@
 (function() {
 	var Initiable, Body, Mortal, Vehicle, Gun, Tank, Projectile, Missile, Explosion;
 
+	var gravity = Vector(0, 0.0001);
+
 	Initiable = function() {
 		var Initiable = function Initiable(options) {
 			this.init(options);
@@ -49,42 +51,42 @@
 
 				this.posNext = this.pos.clone();
 			},
-			update: function(dt, t) {
-				// dt = 1;
+			update: function(dt, t, velocityOnly) {
+
+
 				var unfriction = 1-this.friction, 
 					k = (1-unfriction)/unfriction;
-				// var lnf = Math.log(unfriction);
-				var vN = this.acceleration.over(k), 
-					unfriction_pow_dt = Math.pow(unfriction, dt);
-				// var v0 = this.velocity.clone(),
-					// v0_minus_vN_over_lnf = Vector.divide(v0.minus(vN), lnf);
 
-				// function nextPos(pos, dt, unfriction_pow_dt) {
-				// 	var deltaPos = Vector.subtract(vN.times(dt), v0_minus_vN_over_lnf.times(1-unfriction_pow_dt));
-				// 	Vector.add(pos, deltaPos);
-				// }
-				// // Vector.add(Vector.multiply(Vector.subtract(this.velocity, vN), unfriction_pow_dt), vN);
-				this.velocity.mix(vN, 1-unfriction_pow_dt);
+				if (!velocityOnly) {
+					this.acceleration.subtract(this.velocity.unit().multiply(Math.min(this.velocity.length, this.velocity.squared * this.friction * this.massInv * this.radius * 0.00001)));
+					this.acceleration.add(gravity);
+				}
 
-				// this.posNext = this.pos.clone();
-				// nextPos(this.pos, dt, unfriction_pow_dt);
-				// nextPos(this.posNext, dt*2, Math.pow(unfriction_pow_dt,2));
+				// console.log(this.acceleration);
 
-				// Vector.multiply(Vector.add(this.velocity, this.acceleration), unfriction);
-				
+				this.velocity.add(this.acceleration);
+
+				if (velocityOnly) {
+					this.acceleration.zero();
+					return;
+				}
+
 				this.pos.add(this.velocity.times(dt));
-				this.posNext = this.pos.clone();
-				this.posNext.add((this.velocity.plus(this.acceleration)).multiply(unfriction));
+				// this.posNext = this.pos.clone();
+				// this.posNext.add((this.velocity.plus(this.acceleration)).multiply(unfriction));
+
+				this.acceleration.zero();
+
 
 				var e = this.restitution;
 				if (!(0 <= e && e <= 1))
 					e = 1;
 
 				if (!this.inFieldX(this.pos.x, this.radius)) {
-					this.velocity.x = -e*this.velocity.x;
+					this.acceleration.x += -(1+e)*this.velocity.x;
 				}
 				if (!this.inFieldY(this.pos.y, this.radius)) {
-					this.velocity.y = -e*this.velocity.y;
+					this.acceleration.y += -(1+e)*this.velocity.y;
 				}
 				this.limitField(this.pos, this.radius);
 			},
@@ -93,13 +95,18 @@
 			},
 			detectImpact: function(that, k) {
 				var posA = this.pos, posB = that.pos;
-				if (k > 0) {
-					posA = posA.lerp(this.posNext, k);
-					posB = posB.lerp(that.posNext, k);
-				}
+				// if (k > 0) {
+				// 	posA = posA.lerp(this.posNext, k);
+				// 	posB = posB.lerp(that.posNext, k);
+				// }
 				var posAB = posB.minus(posA), dSq = posAB.squared, collideDSq = Math.pow(this.radius+that.radius, 2);
 				if (dSq < collideDSq) {
 					this.applyImpact(that, posAB.unit());
+
+					// if (this.explode)
+					// 	this.explode(this.target === that);
+					// if (that.explode)
+					// 	that.explode(that.target === this);
 
 					return true;
 				}
@@ -122,15 +129,30 @@
 
 				var impulse = normalAB.times(pANormal*(1+e));
 				
-				vA.add(impulse.times(-mAInv));
-				vB.add(impulse.times(mBInv));
+				this.acceleration.add(impulse.times(-mAInv));
+				if (that.acceleration)
+					that.acceleration.add(impulse.times(mBInv));
+
+				Body.prototype.update.call(this, 1, NaN, true);
+				Body.prototype.update.call(that, 1, NaN, true);
+
+				this.positionalCorrection(that, normalAB, this.radius+that.radius-(that.pos.minus(this.pos)).length);
 
 				// var kFinal = 1/2*(1/mAInv*vA.squared+1/mBInv*vB.squared);
 				// console.log(kFinal/kInitial);
 			},
+			positionalCorrection: function(that, normalAB, penetration) {
+				var percent = 0.02;//0.2;//0.2 // usually 20% to 80%
+				var slop = 0.01; // usually 0.01 to 0.1
+				var correction = normalAB.times(percent*Math.pow(Math.max(penetration-slop, 0), 2)/(this.massInv + that.massInv));
+				this.acceleration.add(correction.times(-this.massInv));
+				that.acceleration.add(correction.times(that.massInv));
+			},
 			clear: function(ctx) {
-				var radius = this.radius + 1;
-				ctx.clearRect(this.pos.x-radius, this.pos.y-radius, radius*2, radius*2);
+				var radius = Math.ceil(this.radius + 1);
+				ctx.clearRect(Math.floor(this.pos.x-radius), Math.floor(this.pos.y-radius), radius*2, radius*2);
+				// ctx.strokeRect(this.pos.x-radius+1, this.pos.y-radius+1, radius*2-2, radius*2-2);
+				
 			},
 			draw: function(ctx) {
 				ctx.save();
@@ -168,10 +190,11 @@
 				extendWith(this, options, defaults);
 			},
 			update: function(dt, t) {
-				Mortal.super.prototype.update.call(this, dt, t);
-
-				if (!this.alive)
+				if (!this.alive) {
 					this.remove();
+				}
+
+				Mortal.super.prototype.update.call(this, dt, t);
 			},
 			kill: function() {
 				this.alive = false;
@@ -184,8 +207,8 @@
 	Vehicle = function() {
 		var Vehicle = function Vehicle() {},
 			defaults = {
-				friction: 0.03,//0.01,//1-0.97,
-				restitution: 1,//0.56,
+				friction: 0.01,//0.03,//0.01,//1-0.97,
+				restitution: 0.56,
 
 				// mass: 400,
 
@@ -205,13 +228,17 @@
 			update: function(dt, t) {
 				Vehicle.super.prototype.update.call(this, dt, t);
 
-				// if (!this.alive) {
-					this.acceleration = Vector(0,0);
+				if (!this.alive || !this.autoSpin) {
+					// this.acceleration = Vector(0,0);
 					return;
-				// }
+				}
 
-				this.heading.angle += 0.05*dt;
-				this.acceleration = this.heading.unit().times(0.2);
+				this.heading.length = 1;
+
+				this.heading.angle += 0.4;//0.05;//*dt;
+				this.acceleration.add(this.heading.times(2));
+
+				
 			}
 		};
 
@@ -286,7 +313,9 @@
 					this.heat += this.heatfactor * shell.velocity.squared;
 					// Vector.add(this.velocity, shell.velocity.times(-0.01));
 					var impulseDM = (shell.velocity.minus(this.velocity)).times(shell.mass*this.bodyMassInv);
-					this.velocity.add(impulseDM.times(-1));
+					this.acceleration.add(impulseDM.times(-1));
+
+					shell.update(1, NaN);
 				}
 			},
 			shell: function(shell) {}
@@ -321,19 +350,21 @@
 
 				gun.pos = this.pos;
 				gun.velocity = this.velocity;
+				gun.acceleration = this.acceleration;
 				gun.target = this.target;
 
 				gun.bodyMassInv = this.massInv;
 
 				gun.update(dt, t);
 
-				// gun.fire();
+				if (this.autoFire)
+					gun.fire();
 
 				// if (!this.alive)
 				// 	return;
 
 				if (this.toPos)
-					this.velocity.mix(this.toPos.minus(this.pos).multiply(0.02), 0.1);
+					this.acceleration.add(this.velocity.lerp(this.toPos.minus(this.pos).multiply(0.02), 0.1).subtract(this.velocity));
 			},
 			clear: function(ctx) {
 				Tank.super.prototype.clear.call(this, ctx);
@@ -380,6 +411,8 @@
 				extendWith(this, options, defaults);
 			},
 			update: function(dt, t) {
+				Projectile.super.prototype.update.call(this, dt, t);
+
 				var target = this.target;
 				if (target) {
 					this.detectImpact(target);
@@ -396,7 +429,15 @@
 					this.explode();
 				}
 
-				Projectile.super.prototype.update.call(this, dt, t);
+				if (this.exploding) {
+					this.kill();
+
+					this.shell(new Explosion({
+						velocity: this.velocity.clone(),
+						pos: this.pos.clone(),
+						red: this.red
+					}));
+				}
 				// }
 			},
 			detectImpact: function(body) {
@@ -413,13 +454,13 @@
 				// }
 
 				if (isImpact) {
-					// if (body === this.target) {
+					if (body === this.target) {
 						this.explode(body === this.target);
 						if (body.explode)
 							body.explode();
 						else if (body.kill)
 							body.kill();
-					// }
+					}
 					// else {
 					// 	// var rn = Math.random();
 					// 	// if (rn<0.01)
@@ -449,13 +490,9 @@
 				if (!this.alive)
 					return;
 
-				this.kill();
-
-				this.shell(new Explosion({
-					velocity: this.velocity.clone(),
-					pos: this.pos.clone(),
-					red: red
-				}));
+				this.exploding = true;
+				this.red = red;
+				
 			},
 			shell: function(shell) {}
 		};
@@ -472,7 +509,7 @@
 	Explosion = function() {
 		var Explosion = function Explosion() {},
 			defaults = {
-				friction: 1-0.1,
+				friction: 0.9,//1-0.1,
 				lifetime: 30,
 				timespan: 0,
 
@@ -497,7 +534,7 @@
 
 				this.radius = 60*factor;
 				this.lineWidth = Math.max(0.5, 5*(1-factor));
-				this.friction = 1-Math.max(0.5, 0.3+0.9*(1-factor)/1.5);
+				this.friction = 0.05;//(1-Math.max(0.5, 0.3+0.9*(1-factor)/1.5))/10;
 
 				if (this.timespan < this.lifetime)
 					this.timespan+=dt;
@@ -518,6 +555,10 @@
 				ctx.fill();
 				ctx.restore();
 			},
+			clear: function(ctx) {
+				var radius = Math.ceil(this.radius + this.lineWidth/2 + 1);
+				ctx.clearRect(Math.floor(this.pos.x-radius), Math.floor(this.pos.y-radius), radius*2, radius*2);
+			},
 			kill: function() {
 				this.remove();
 			},
@@ -529,6 +570,7 @@
 
 	extend(this, {
 		Body: Body,
+		Mortal: Mortal,
 		Gun: Gun,
 		Tank: Tank,
 		Projectile: Projectile,
