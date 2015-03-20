@@ -7,23 +7,6 @@
 		return x*x;
 	}
 
-	function extend(o) { // o, a...
-		var a;
-
-		for (var j = 1, m = arguments.length; j < m; ++j) {
-			a = arguments[j];
-
-			var keys = Object.keys(a);
-
-			for (var i = 0, n = keys.length, key; i < n; ++i) {
-				key = keys[i];
-				o[key] = a[key];
-			}
-		}
-
-		return o;
-	}
-
 	Vector = function() {
 		var Vector = function(x, y) {
 			this.x = 1*x;
@@ -46,36 +29,44 @@
 			negativeY: function() {
 				return new Vector(this.x, -this.y);
 			},
-			add: function(v, w) {
-				if (typeof v !== 'number') {
-					w = v.y; v = v.x;
-				} else if (typeof w !== 'number')
-					w = v;
-				return new Vector(this.x+v, this.y+w);
+			plus: function(v) {
+				return new Vector(this.x+v.x, this.y+v.y);
 			},
-			subtract: function(v, w) {
-				if (typeof v !== 'number') {
-					w = v.y; v = v.x;
-				} else if (typeof w !== 'number')
-					w = v;
-				return new Vector(this.x-v, this.y-w);
+			minus: function(v) {
+				return new Vector(this.x-v.x, this.y-v.y);
 			},
-			multiply: function(v, w) {
-				if (typeof v !== 'number') {
-					w = v.y; v = v.x;
-				} else if (typeof w !== 'number')
-					w = v;
-				return new Vector(this.x*v, this.y*w);
+			times: function(n) {
+				return new Vector(this.x*n, this.y*n);
 			},
-			divide: function(v, w) {
-				if (typeof v !== 'number') {
-					w = v.y; v = v.x;
-				} else if (typeof w !== 'number')
-					w = v;
-				return new Vector(this.x/v, this.y/w);
+			over: function(n) {
+				return new Vector(this.x/n, this.y/n);
+			},
+			add: function(v) {
+				this.x += v.x;
+				this.y += v.y;
+
+				return this;
+			},
+			subtract: function(v) {
+				this.x -= v.x;
+				this.y -= v.y;
+
+				return this;
+			},
+			multiply: function(n) {
+				this.x *= n;
+				this.y *= n;
+
+				return this;
+			},
+			divide: function(n) {
+				this.x /= n;
+				this.y /= n;
+
+				return this;
 			},
 			unit: function() {
-				return this.divide(this.length);
+				return this.over(this.length);
 			},
 
 			equals: function(v, w) {
@@ -112,21 +103,19 @@
 			angleFrom: function(v) {
 				return -this.angleTo(v);
 			},
-			axisX: function(v, w) { // regards v as x-axis
-				if (typeof v !== 'number') {
-					w = v.y; v = v.x;
-				} else if (typeof w !== 'number')
-					w = v;
-				var angle = this.angle - Math.atan2(w, v), length = this.length;
-				return new Vector(length * Math.cos(angle), length * Math.sin(angle));
-			},
 			distanceTo: function(v) {
-				return this.subtract(v).length;
+				return this.minus(v).length;
 			},
 			lerp: function(b, k) {
 				return new Vector((1-k)*this.x+k*b.x, (1-k)*this.y+k*b.y);
 			},
+			mix: function(v, k) {
+				this.x = (1-k)*this.x+k*v.x;
+				this.y = (1-k)*this.y+k*v.y;
 
+				return this;
+			},
+			
 			toString: function() {
 				return 'x: ' + this.x + ', y: ' + this.y;
 			},
@@ -139,7 +128,7 @@
 				this.x *= fraction;
 				this.y *= fraction;
 			},
-			get square() {
+			get squared() {
 				return this.dot(this);
 			},
 			get angle() {
@@ -179,7 +168,7 @@
 				return vector.fromTheta(Math.random() * Math.PI * 2);
 			},
 			random: function() {
-				return vector.randomUnit().multiply(Math.random());
+				return vector.randomUnit().times(Math.random());
 			},
 			min: function(a, b) {
 				return new Vector(Math.min(a.x, b.x), Math.min(a.y, b.y))
