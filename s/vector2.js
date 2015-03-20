@@ -46,39 +46,15 @@
 
 				return this;
 			},
-			multiply: function(v) {
-				this.x *= v.x;
-				this.y *= v.y;
+			multiply: function(n) {
+				this.x *= n;
+				this.y *= n;
 
 				return this;
 			},
-			divide: function(v) {
-				this.x /= v.x;
-				this.y /= v.y;
-
-				return this;
-			},
-			add1: function(x) {
-				this.x += x;
-				this.y += x;
-
-				return this;
-			},
-			subtract1: function(x) {
-				this.x -= x;
-				this.y -= x;
-
-				return this;
-			},
-			multiply1: function(x) {
-				this.x *= x;
-				this.y *= x;
-
-				return this;
-			},
-			divide1: function(x) {
-				this.x /= x;
-				this.y /= x;
+			divide: function(n) {
+				this.x /= n;
+				this.y /= n;
 
 				return this;
 			},

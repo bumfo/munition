@@ -57,13 +57,14 @@
 	}
 
 	function nameFn(fn, name) {
-		if (typeof name !== 'string')
+		// if (!name || typeof name !== 'string')
 			return fn;
-		return new Function("return function(fn){return function "+(name.match(/^[a-zA-Z_$][a-zA-Z0-9_$]*$/)||[""])[0]+"(){return fn.apply(this, arguments)}}")()(fn);
+
+		return new Function('return function(fn){return function '+(name.match(/^[a-zA-Z_$][a-zA-Z0-9_$]*$/)||['Unknown'])[0]+'(){return fn.apply(this, arguments)}}')()(fn);
 	}
 
 	function inherit(Class, Super, protoOnly) {
-		var Klass = protoOnly ? Class : nameFn(function() {
+		var Klass = protoOnly ? Class : nameFn(function Anonymous() {
 			Super.apply(this, arguments);
 			return Class.apply(this, arguments);
 		}, Class.name);

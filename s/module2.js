@@ -58,7 +58,7 @@
 	}
 
 	function nameFn(fn, name) {
-		if (typeof name !== 'string')
+		// if (typeof name !== 'string')
 			return fn;
 		return new Function("return function(fn){return function "+(name.match(/^[a-zA-Z_$][a-zA-Z0-9_$]*$/)||[""])[0]+"(){return fn.apply(this, arguments)}}")()(fn);
 	}

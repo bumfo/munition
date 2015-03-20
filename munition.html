@@ -18,18 +18,62 @@
 'use strict';
 
 (function() {
-	var mousePos = Vector(0,0);
+	var width = window.innerWidth, height = window.innerHeight;
 
-	var tank = new Tank({velocity: Vector(-5,-5), gun: {cooldown: 0.8, headingFix: 2}, toPos: mousePos}),
-		robot = new Tank({velocity: Vector(5,5), gun: {cooldown: 0.8, headingFix: 2}});
+	var centerPos = Vector(width/2, height/2),
+		rndCap = Math.min(width, height)/2;
+
+	function randomPos() {
+		return Vector.random().multiply(rndCap).add(centerPos);
+	}
+
+	var mousePos = randomPos();
+
+	var tank = new Tank({
+			pos: randomPos(), 
+			velocity: Vector(-5,-5), 
+			gun: {cooldown: 0.8, headingFix: 2}, 
+			toPos: mousePos,
+			mass: 400
+		}),
+		robot = new Tank({
+			pos: randomPos(), 
+			velocity: Vector(5,5), 
+			gun: {cooldown: 0.8, headingFix: 2},
+			// toPos: tank.pos
+		});
 
 	tank.target = robot;
 	robot.target = tank;
 
-	var tanks = [robot, tank], bullets = [], explosions = [],
+	robot.update = function(dt, t) {
+		// this.pos.x = centerPos.x;
+		this.pos.y = centerPos.y;
+		// this.velocity.x = 0;
+		this.velocity.y = 0;
+		Tank.prototype.update.call(this, dt, t);
+		// this.velocity.x = 0;
+		this.velocity.y = 0;
+		// this.pos.x = centerPos.x;
+		this.pos.y = centerPos.y
+	}
+
+	var tanks = [tank, robot], bullets = [], explosions = [],
 		objs = [tanks, bullets, explosions];
 
-	bullets.subdivision = 5;
+	for (var i = tanks.length, n = i+10; i < n; ++i) {
+		var tan = tanks[i] = new Tank({pos: [10+i*50, centerPos.y]});//, toPos: tanks[i-1].pos});
+		tan.target = tanks[i-1];
+		tan.update = function(dt, t) {
+			this.pos.y = centerPos.y;
+			this.velocity.y = 0;
+			Tank.prototype.update.call(this, dt, t);
+			this.velocity.y = 0;
+			this.pos.y = centerPos.y;
+		}
+	}
+
+	// bullets.subdivision = 5;
 	explosions.noCollision = true;
 
 	console.log(tank);
@@ -58,7 +102,25 @@
 		mousePos.y = e.pageY;
 	});
 
-	var width = window.innerWidth, height = window.innerHeight;
+	var willFire = false, fired = false, willHoldFire = false;
+
+	window.addEventListener("mousedown", function(e) {
+		willFire = true;
+		fired = false;
+	});
+
+	window.addEventListener("mouseup", function(e) {
+		if (fired)
+			willFire = false;
+		else
+			willHoldFire = true
+	});
+
+	document.addEventListener("contextmenu", function(e) {
+		e.preventDefault();
+	});
+
+	
 
 	extend(Body.prototype, {
 		inFieldX: function(x, radius) {
@@ -105,6 +167,8 @@
 
 	var draw = new Draw(width, height);
 
+	var fpsLast = 0;
+
 	requestAnimationFrame(function(t) {
 		var t0 = t, tt = t;
 
@@ -123,9 +187,12 @@
 			// 	return;
 			// }
 
+			draw.clearFps();
+
 			var dtp = dt/1000*60, tp = t/1000*60;
 
 			var scale = 1;
+				// scale = 0.2;
 
 			dtp *= scale;
 			tp *= scale;
@@ -145,6 +212,26 @@
 					}
 				}
 			}
+			function detectCollision2(o, oo) {
+				if (o.noCollision || oo.noCollision)
+					return;
+				for (var i = 0, n = o.length; i < n; ++i) {
+					var x = o[i];
+					for (var j = 0, m = oo.length; j < m; ++j) {
+						x.detectImpact(oo[j]);
+					}
+				}
+			}
+			function detectCollision0(o, i) {
+				var x = o[i];
+				if (x.noCollision)
+					return;
+				for (var j = i+1, m = o.length; j < m; ++j) {
+					var y = o[j];
+					if (!y.noCollision)
+						detectCollision2(x, y);
+				}
+			}
 			function update(y, dtp, tp) {
 				var i = 0, yi;
 				detectCollision(y);
@@ -160,7 +247,17 @@
 				// });
 			}
 
-			objs.forEach(function(y) {
+			if (willFire) {
+				tank.gun.heat = 0;
+				tank.gun.fire();
+				fired = true;
+				if (willHoldFire) {
+					willHoldFire = false;
+					willFire = false;
+				}
+			}
+
+			objs.forEach(function(y, i) {
 				var dtpn = dtp, n = y.subdivision;
 
 				if (n > 1) {
@@ -172,6 +269,8 @@
 				} else {
 					update(y, dtp, tp);
 				}
+
+				detectCollision0(objs, i);
 			});
 
 			objs.forEach(function(y) {
@@ -180,13 +279,15 @@
 				});
 			});
 
-			var va1 = (1+Math.sin(tp/480*Math.PI*2))/2;
-			var va2 = (1+Math.sin(tp/480*Math.PI*2+678346))/2;
+			// var va1 = (1+Math.sin(tp/480*Math.PI*2))/2;
+			// var va2 = (1+Math.sin(tp/480*Math.PI*2+678346))/2;
 
-			var k = 0.9;
+			// var k = 0.9;
 
-			robot.gun.cooldown = (0.9-k)+k*va1;
-			tank.gun.cooldown = (0.9-k)+k*va2;
+			// robot.gun.cooldown = (0.9-k)+k*va1;
+			// tank.gun.cooldown = (0.9-k)+k*va1;
+
+			draw.fps(fpsLast=fpsLast*0.5+(1000/dt)*0.5);
 
 			requestAnimationFrame(frame);
 		});
