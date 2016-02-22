@@ -48,10 +48,10 @@
 			},
 			applyDrag: function(vFlow) {
 				var u = vFlow.clone().subtract(this.velocity);
-				this.applyForce(u.unit().multiply1(u.square*this.drag));
+				this.applyForce(u.unit().multiply(u.square*this.drag));
 			},
 			applyForce: function(force) {
-				var dv = force.clone().divide1(this.mass);
+				var dv = force.clone().divide(this.mass);
 				this.velocity.add(dv); // dt = 1
 			}
 
